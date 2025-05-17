@@ -54,8 +54,10 @@ contract FundMe {
     function fund() public payable {
         require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
         // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, "You need to spend more ETH!");
+        if (s_addressToAmountFunded[msg.sender] == 0) {
+            s_funders.push(msg.sender);
+        }
         s_addressToAmountFunded[msg.sender] += msg.value;
-        s_funders.push(msg.sender);
     }
 
     // aderyn-ignore-next-line(centralization-risk,unused-public-function,state-change-without-event))
