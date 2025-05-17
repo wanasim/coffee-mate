@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  getDefaultWallets,
-  RainbowKitProvider,
-} from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import {
   QueryClient,
   QueryClientProvider,
