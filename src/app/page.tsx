@@ -1,103 +1,131 @@
-import Image from "next/image";
+"use client";
+
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import {
+  useAccount,
+  useBalance,
+  useContractRead,
+  useContractWrite,
+  useReadContract,
+  useWriteContract,
+} from "wagmi";
+import { type Address, parseEther } from "viem";
+import FUND_ME_ABI from "../../foundry/out/FundMe.sol/FundMe.json";
+
+// FundMe contract ABI (you'll need to replace this with your actual contract ABI)
+// const FUND_ME_ABI = [
+//   {
+//     inputs: [],
+//     name: "fund",
+//     outputs: [],
+//     stateMutability: "payable",
+//     type: "function",
+//   },
+//   {
+//     inputs: [],
+//     name: "getFunders",
+//     outputs: [{ name: "", type: "address[]" }],
+//     stateMutability: "view",
+//     type: "function",
+//   },
+//   {
+//     inputs: [],
+//     name: "getOwner",
+//     outputs: [{ name: "", type: "address" }],
+//     stateMutability: "view",
+//     type: "function",
+//   },
+// ] as const;
+
+if (!process.env.NEXT_PUBLIC_FUND_ME_CONTRACT_ADDRESS) {
+  throw new Error(
+    "Missing NEXT_PUBLIC_FUND_ME_CONTRACT_ADDRESS environment variable"
+  );
+}
+
+const FUND_ME_ADDRESS = process.env
+  .NEXT_PUBLIC_FUND_ME_CONTRACT_ADDRESS as `0x${string}`;
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { address, isConnected } = useAccount();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const balance = useBalance({ address: FUND_ME_ADDRESS });
+
+  const { data: funders } = useReadContract({
+    address: FUND_ME_ADDRESS,
+    abi: FUND_ME_ABI.abi,
+    functionName: "getFunders",
+  }) as { data: Address[] };
+
+  const { writeContract, isPending, isError, error } =
+    useWriteContract();
+
+  const handleFund = async () => {
+    try {
+      const result = await writeContract({
+        address: FUND_ME_ADDRESS,
+        abi: FUND_ME_ABI.abi,
+        functionName: "fund",
+        value: parseEther("0.1"),
+      });
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
+
+  return (
+    <main className="min-h-screen p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">
+            Coffee Mate
+          </h1>
+          <ConnectButton />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {isConnected && (
+          <div className="space-y-6">
+            <div className="bg-white/5 p-6 rounded-lg">
+              <h2 className="text-2xl font-semibold mb-4">
+                Buy me a coffee!
+              </h2>
+              <p className="mb-4">
+                Support this project by buying me a coffee
+                for 0.1 ETH
+              </p>
+              <button
+                type="button"
+                onClick={handleFund}
+                disabled={isPending}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isPending ? "Sending..." : "Fund 0.1 ETH"}
+              </button>
+            </div>
+
+            <div>
+              Balance is: {balance.data?.value.toString()}
+            </div>
+
+            <div className="bg-white/5 p-6 rounded-lg">
+              <h2 className="text-2xl font-semibold mb-4">
+                Funders
+              </h2>
+              {funders && funders.length > 0 ? (
+                <ul className="space-y-2">
+                  {funders.map((funder) => (
+                    <li key={funder} className="text-sm">
+                      {funder}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No funders yet. Be the first one!</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

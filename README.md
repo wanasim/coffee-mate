@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coffee Mate ☕
+
+A decentralized application where you can support a creator by buying them coffee! Built with Next.js, Foundry, and deployed on Sepolia testnet.
+
+## Features
+
+- Fund the contract owner with ETH
+- View all funders
+- Track contract balance
+- Owner can withdraw funds
 
 ## Getting Started
 
@@ -14,23 +23,88 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- [Node.js](https://nodejs.org/)
+- [MetaMask](https://metamask.io/)
 
-## Learn More
+### Local Deployment (Anvil)
 
-To learn more about Next.js, take a look at the following resources:
+1. Start Anvil in a separate terminal:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+anvil
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. Deploy the Mock Price Feed:
 
-## Deploy on Vercel
+```bash
+forge create src/mocks/MockV3Aggregator.sol:MockV3Aggregator \
+ --rpc-url http://localhost:8545 \
+ --private-key $TEST_WALLET_PRIVATE_KEY \
+ --broadcast \
+ --constructor-args 8 200000000000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Deploy the FundMe Contract:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+forge create src/FundMe.sol:FundMe \
+ --rpc-url http://localhost:8545 \
+ --private-key $TEST_WALLET_PRIVATE_KEY \
+ --broadcast \
+ --constructor-args <PRICE_FEED_ADDRESS>
+```
+
+Or use the deployment script:
+
+```bash
+forge script script/DeployFundMe.s.sol --rpc-url http://localhost:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+### Connecting to Anvil
+
+1. Add Anvil to MetaMask:
+
+   - Network Name: Anvil
+   - RPC URL: http://localhost:8545
+   - Chain ID: 31337
+   - Currency Symbol: ETH
+
+2. Import a test account from Anvil output (they come with 10,000 ETH)
+
+## Generating ABIs
+
+There are two ways to generate ABIs for your smart contracts using Foundry:
+
+### Method 1: Using forge build
+
+```bash
+# Build your contracts and generate ABIs
+forge build
+
+# The ABIs will be generated in the out/ directory
+# Copy the ABI to your frontend project
+cp out/FundMe.sol/FundMe.json foundry/src/abi/
+```
+
+### Method 2: Using forge inspect
+
+```bash
+# Generate ABI for a specific contract
+forge inspect FundMe abi > foundry/src/abi/FundMe.json
+
+# Generate ABIs for all contracts in your project
+forge inspect --pretty src/*.sol abi > foundry/src/abi/contracts.json
+```
+
+The generated ABI can then be imported into your frontend application:
+
+```typescript
+import FUND_ME_ABI from "../../foundry/src/abi/FundMe.json";
+```
+
+Note: Make sure to run either command after any changes to your smart contracts to keep the ABI in sync with your contract code.
