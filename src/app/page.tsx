@@ -8,34 +8,11 @@ import {
   useContractWrite,
   useReadContract,
   useWriteContract,
+  useWaitForTransactionReceipt,
 } from "wagmi";
 import { type Address, parseEther } from "viem";
+import { useState, useEffect } from "react";
 import FUND_ME_ABI from "../../foundry/out/FundMe.sol/FundMe.json";
-
-// FundMe contract ABI (you'll need to replace this with your actual contract ABI)
-// const FUND_ME_ABI = [
-//   {
-//     inputs: [],
-//     name: "fund",
-//     outputs: [],
-//     stateMutability: "payable",
-//     type: "function",
-//   },
-//   {
-//     inputs: [],
-//     name: "getFunders",
-//     outputs: [{ name: "", type: "address[]" }],
-//     stateMutability: "view",
-//     type: "function",
-//   },
-//   {
-//     inputs: [],
-//     name: "getOwner",
-//     outputs: [{ name: "", type: "address" }],
-//     stateMutability: "view",
-//     type: "function",
-//   },
-// ] as const;
 
 if (!process.env.NEXT_PUBLIC_FUND_ME_CONTRACT_ADDRESS) {
   throw new Error(
@@ -49,20 +26,49 @@ const FUND_ME_ADDRESS = process.env
 export default function Home() {
   const { address, isConnected } = useAccount();
 
-  const balance = useBalance({ address: FUND_ME_ADDRESS });
+  const { data: balance, refetch: refetchBalance } =
+    useBalance({
+      address: FUND_ME_ADDRESS,
+    });
 
-  const { data: funders } = useReadContract({
+  const { data: funders, refetch: refetchFunders } =
+    useReadContract({
+      address: FUND_ME_ADDRESS,
+      abi: FUND_ME_ABI.abi,
+      functionName: "getFunders",
+    }) as { data: Address[]; refetch: () => void };
+
+  const { data: owner } = useReadContract({
     address: FUND_ME_ADDRESS,
     abi: FUND_ME_ABI.abi,
-    functionName: "getFunders",
-  }) as { data: Address[] };
+    functionName: "getOwner",
+  }) as { data: Address };
 
-  const { writeContract, isPending, isError, error } =
-    useWriteContract();
+  const {
+    writeContract,
+    isPending,
+    isError,
+    error,
+    data: txHash,
+  } = useWriteContract();
+
+  // Wait for transaction confirmation
+  const { isLoading: isConfirming, isSuccess } =
+    useWaitForTransactionReceipt({
+      hash: txHash,
+    });
+
+  // Effect to refetch data when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess) {
+      refetchBalance();
+      refetchFunders();
+    }
+  }, [isSuccess, refetchBalance, refetchFunders]);
 
   const handleFund = async () => {
     try {
-      const result = await writeContract({
+      await writeContract({
         address: FUND_ME_ADDRESS,
         abi: FUND_ME_ABI.abi,
         functionName: "fund",
@@ -71,6 +77,14 @@ export default function Home() {
     } catch (err) {
       console.error("Error:", err);
     }
+  };
+
+  const handleWithdraw = async () => {
+    await writeContract({
+      address: FUND_ME_ADDRESS,
+      abi: FUND_ME_ABI.abi,
+      functionName: "withdraw",
+    });
   };
 
   return (
@@ -93,18 +107,34 @@ export default function Home() {
                 Support this project by buying me a coffee
                 for 0.1 ETH
               </p>
-              <button
-                type="button"
-                onClick={handleFund}
-                disabled={isPending}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {isPending ? "Sending..." : "Fund 0.1 ETH"}
-              </button>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={handleFund}
+                  disabled={isPending || isConfirming}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isPending
+                    ? "Sending..."
+                    : isConfirming
+                    ? "Confirming..."
+                    : "Fund 0.1 ETH"}
+                </button>
+                {owner === address && (
+                  <button
+                    type="button"
+                    disabled={isPending || isConfirming}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    onClick={handleWithdraw}
+                  >
+                    Withdraw
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
-              Balance is: {balance.data?.value.toString()}
+              Balance is: {balance?.value.toString()}
             </div>
 
             <div className="bg-white/5 p-6 rounded-lg">

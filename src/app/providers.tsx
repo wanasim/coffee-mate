@@ -29,7 +29,9 @@ const config = createConfig({
   chains: [anvil, sepolia],
   transports: {
     [anvil.id]: http("http://127.0.0.1:8545"),
-    [sepolia.id]: http("https://sepolia.infura.io/v3/"),
+    [sepolia.id]: http(
+      process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
+    ),
   },
 });
 
