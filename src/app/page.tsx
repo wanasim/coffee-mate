@@ -4,14 +4,12 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useAccount,
   useBalance,
-  useContractRead,
-  useContractWrite,
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { type Address, parseEther } from "viem";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 const FUND_ME_ABI = {
   abi: [
@@ -441,8 +439,6 @@ export default function Home() {
   const {
     writeContract,
     isPending,
-    isError,
-    error,
     data: txHash,
   } = useWriteContract();
 

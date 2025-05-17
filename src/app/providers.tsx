@@ -19,12 +19,6 @@ if (!process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID) {
   );
 }
 
-const { wallets } = getDefaultWallets({
-  appName: "Coffee Mate",
-  projectId:
-    process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
-});
-
 const config = createConfig({
   chains: [anvil, sepolia],
   transports: {
